@@ -9,6 +9,9 @@ let
 in
   assert mySecrets.user != "";
   assert mySecrets.hostname != "";
+  assert mySecrets.hostId != "";
+  assert mySecrets.domain != "";
+  assert mySecrets.tz != "";
 
 {
   imports =
@@ -27,6 +30,8 @@ in
 
   # for networking in/with virtual machines
   boot.kernel.sysctl = { "net.ipv4.ip_forward" = 1; };
+
+  boot.extraModulePackages = [ config.boot.kernelPackages.wireguard ];
 
   # networking.hostName = "nixos"; # Define your hostname.
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
@@ -55,7 +60,7 @@ in
   # programs.mtr.enable = true;
   # programs.gnupg.agent = { enable = true; enableSSHSupport = true; };
   # in order to make slock work, it has to have the security wrapper enabled
-  security.wrappers.slock.source = "${pkgs.slock.out}/bin/slock";
+  # security.wrappers.slock.source = "${pkgs.slock.out}/bin/slock";
 
   # List services that you want to enable:
 
@@ -76,19 +81,92 @@ in
         # IPv6?
         enableIPv6 = true;
         # hostName = "${mySecrets.hostname}"; # Define your hostname.
-	hostName = "${mySecrets.hostname}";
+        hostName = "${mySecrets.hostname}";
+        domain = "${mySecrets.domain}";
+        search = ["${mySecrets.domain}"];
         hostId = "${mySecrets.hostId}";
-        # enable = true;  # Enables wireless. Disable when using network manager
-        networkmanager.enable = true;
+        # networkmanager.enable = true;
         firewall.allowPing = true;
+        useDHCP = true;
+        interfaces = {
+          # enp0s25 = {
+          #   ipv4.addresses = [
+          #     {
+          #       address = "192.168.1.99";
+          #       prefixLength = 24;
+          #     }
+          #   ];
+          # };
+          # virbr0 = {
+          #   ipv4.addresses = [
+          #     {
+          #       address = "192.168.2.1";
+          #       prefixLength = 24;
+          #     }
+          #     # { address = "192.168.1.1"; prefixLength = 24; }
+          #   ];
+          #   ipv4.routes = [
+          #     {
+          #       address = "192.168.2.0";
+          #       prefixLength = 24;
+          #       via = "192.168.1.1";
+          #     }
+          #   ];
+          # };
+          # eth1 = {
+          #   ipv4.addresses = [
+          #     { address = "10.0.0.2"; prefixLength = 16; }
+          #     # { address = "192.168.1.1"; prefixLength = 24; }
+          #   ];
+          # };
+          tap0 = {
+            virtual = true;
+            virtualOwner = "bjorn";
+            virtualType = "tap";
+          };
+          tap1 = {
+            virtual = true;
+            virtualOwner = "bjorn";
+            virtualType = "tap";
+          };
+          tap2 = {
+            virtual = true;
+            virtualOwner = "bjorn";
+            virtualType = "tap";
+          };
+        };
+        bridges = {
+          br0 = {
+            interfaces = [ "enp0s25" ];
+            # interfaces = [ "tap0" "tap1" "tap2" ];
+          };
+        };
         # firewall.allowedUDPPorts = [ 5000 5001 21025 21026 22000 22026 5959 45000 ];
         # firewall.allowedTCPPorts = [ 5000 5001 22000 5959 45000 ];
+        # firewall.allowedTCPPorts = [ 12913 ];
         # Netcat: 5000
         # IPerf: 5001
         # Syncthing: 21025 21026 22000 22026
         # SPICE/VNC: 5900
         # WebProxify: 5959
         # nginx: 4500
+        # wireguard = {
+          # interfaces = {
+            # ips = ["192.168.1.200/30"];
+            # peers = [
+              # {
+                # allowedIPs = [];
+                # endpoint = "br-net.wireguard.io:12913";
+                # publicKey = "Rnc1F6I8ib9LJXkOXqs7yRsBny4DwrLESPakRODpfF8=";
+                # privateKey = "2GFDtTWoA/VtjU9yaSKfXVh10/iyWEn1BB/cczMsCHI=";
+              # }
+            # ];
+          # };
+          # wg0 = {
+            # allowedIPsAsRoutes = true;
+            # ips = [ "192.168.1.132" ];
+          # };
+        # };
         extraHosts = ''
           # Get ad server list from: https://pgl.yoyo.org/adservers/
           ${builtins.readFile (builtins.fetchurl {
@@ -104,6 +182,40 @@ in
   hardware.pulseaudio.enable = true;
 
   hardware.opengl.enable = true;
+
+  services.dnsmasq.enable = true;
+  services.dnsmasq.resolveLocalQueries = true;
+  services.dnsmasq.servers = [ "208.67.220.220" "208.67.222.222" ];
+  services.dnsmasq.extraConfig = ''
+# Never forward plain names (without a dot or domain part)
+domain-needed
+
+# Never forward addresses in the non-routed address spaces.
+bogus-priv
+
+# only listen on the physical ethernet interface
+interface=br0
+
+# Set this (and domain: see below) if you want to have a domain
+# automatically added to simple names in a hosts-file.
+expand-hosts
+
+# Set the domain for dnsmasq. this is optional, but if it is set, it
+# does the following things.
+# 1) Allows DHCP hosts to have fully qualified domain names, as long
+#     as the domain part matches this setting.
+# 2) Sets the "domain" DHCP option thereby potentially setting the
+#    domain of all systems configured by DHCP
+# 3) Provides the domain part for "expand-hosts"
+domain=br-home.net
+
+dhcp-range=192.168.1.110,192.168.10.254,24h
+# static assign
+# dhcp-host=00:27:0E:02:A8:AE,192.168.10.100
+
+# this machine is not the internet gateway, so specify the router here
+dhcp-option=3,192.168.1.1
+  '';
 
   # Enable the X11 windowing system.
   # services.xserver.enable = true;
@@ -131,23 +243,26 @@ in
             # };
         # };
         displayManager.lightdm = {
-	  enable = true;
-	  # extraSeatDefaults = '' ''
+          enable = true;
+          # extraSeatDefaults = ''
+          # display-setup-script=/usr/share/setup-monitors.sh
+          # session-setup-script=/usr/share/setup-monitors.sh
+          # '';
         };
         # displayManager.gdm = {
           # enable = true;
           # wayland = true;
         # };
-	# displayManager.session = [
-	  # {
-	    # manage = "window";
-	    # name = "sway";
-	    # start = ''
-	      # ${pkgs.sway}/bin/sway
-	    # '';
-	  # }
-	# ];
-	# desktopManager.plasma5.enable = true;
+        # displayManager.session = [
+          # {
+            # manage = "window";
+            # name = "sway";
+            # start = ''
+            # ${pkgs.sway}/bin/sway
+            # '';
+          # }
+        # ];
+        # desktopManager.plasma5.enable = true;
         windowManager.dwm.enable = true;
         windowManager.i3.enable = true;
         # windowManager.xmonad.enable = true;
@@ -163,12 +278,16 @@ in
   programs = {
     ssh.startAgent = true;
     fish.enable = true;
-    sway.enable = true;
+    # sway.enable = true;
   };
   environment.variables = {
     EDITOR = "nvim";
     VISUAL = "nvim";
   };
+  security.sudo.enable = true;
+  security.sudo.extraRules = [
+    { commands = [ "ALL" ] ; groups = [ "sudo" ] ; }
+  ];
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.bjorn = {
@@ -180,14 +299,15 @@ in
       "networkmanager"
       "netdev"
       "libvirtd"
-      "sway"
+      # "sway"
     ];
     shell = pkgs.fish;
   };
-
-  # home-manager.users.bjorn = {
-  #   programs.git = {enable = true; userName = "Bjorn Roberg"; userEmail = "bjorn.roberg@gmail.com";};
-  # };
+  users.groups = {
+    netdev = {};
+    networkmanager = {};
+    libvirtd = {};
+  };
 
   fonts = {
         enableFontDir = true;
@@ -233,17 +353,17 @@ in
   environment.systemPackages = with pkgs; [
     curl
     dmenu
-    dwm
     file
-    firefox
-    fish
     lshw
     lsof
+    neovim
     nix-index
     nix-info
-    sway
+    ntfs3g
     tmux
     vim
     wget
+    wireguard
+    wireguard-tools
   ];
 }

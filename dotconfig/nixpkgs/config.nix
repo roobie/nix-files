@@ -1,6 +1,6 @@
 # NOTE(akavel): this file can be either a set, or a func (both are allowed).
 {
-  allowUnfree = true;
+  # allowUnfree = true;
   # TODO(akavel): set $EDITOR to vim
   packageOverrides = defaultPkgs: with defaultPkgs; {
     # NOTE(akavel): `pkgs` below contains "final" packages "from the future",
@@ -39,6 +39,7 @@
       paths = [
         acpi
         alacritty
+        # busybox
         clang
         curl
         emacs
@@ -49,13 +50,23 @@
         fish
         fsharp
         git
+        gnumake
         htop
         kitty
         ktorrent
+        (lxappearance.overrideAttrs(old:
+          rec {
+            name = "lxappearance-0.6.2";
+            src = fetchurl {
+              url = "mirror://sourceforge/project/lxde/LXAppearance/${name}.tar.xz";
+              sha256 = "07r0xbi6504zjnbpan7zrn7gi4j0kbsqqfpj8v2x94gr05p16qj4";
+            };
+          }))
         mono
         mpv
         neovim
-        pkg-config
+        # pkg-config
+        numix-cursor-theme
         psmisc
         qemu
         redshift
@@ -65,8 +76,9 @@
         tree
         tup
         wget
-        vscode
+        # vscode
         xen
+        xorg.xcursorthemes
         zig
         zsh
       ];

@@ -119,21 +119,21 @@ in
           #     # { address = "192.168.1.1"; prefixLength = 24; }
           #   ];
           # };
-          tap0 = {
-            virtual = true;
-            virtualOwner = "bjorn";
-            virtualType = "tap";
-          };
-          tap1 = {
-            virtual = true;
-            virtualOwner = "bjorn";
-            virtualType = "tap";
-          };
-          tap2 = {
-            virtual = true;
-            virtualOwner = "bjorn";
-            virtualType = "tap";
-          };
+          # tap0 = {
+          #   virtual = true;
+          #   virtualOwner = "bjorn";
+          #   virtualType = "tap";
+          # };
+          # tap1 = {
+          #   virtual = true;
+          #   virtualOwner = "bjorn";
+          #   virtualType = "tap";
+          # };
+          # tap2 = {
+          #   virtual = true;
+          #   virtualOwner = "bjorn";
+          #   virtualType = "tap";
+          # };
         };
         bridges = {
           br0 = {
@@ -185,8 +185,10 @@ in
 
   services.dnsmasq.enable = true;
   services.dnsmasq.resolveLocalQueries = true;
-  services.dnsmasq.servers = [ "208.67.220.220" "208.67.222.222" ];
+  services.dnsmasq.servers = [ "208.67.220.220" "208.67.222.222", "8.8.8.8" ];
   services.dnsmasq.extraConfig = ''
+# see https://wiki.archlinux.org/index.php/Dnsmasq
+# see http://www.thekelleys.org.uk/dnsmasq/docs/dnsmasq.conf.example
 # Never forward plain names (without a dot or domain part)
 domain-needed
 
@@ -208,6 +210,13 @@ expand-hosts
 #    domain of all systems configured by DHCP
 # 3) Provides the domain part for "expand-hosts"
 domain=br-home.net
+
+# local domain
+local=/lan/
+domain=lan
+
+# set announce dhcp
+dhcp-option=6,192.168.1.99
 
 dhcp-range=192.168.1.110,192.168.10.254,24h
 # static assign
@@ -302,6 +311,12 @@ dhcp-option=3,192.168.1.1
   security.sudo.extraRules = [
     { commands = [ "ALL" ] ; groups = [ "sudo" ] ; }
   ];
+  # allow qemu IFs to be managed without password
+  security.sudo.extraConfig = ''
+User_Alias QEMUERS = bjorn
+Cmnd_Alias QEMU = /etc/qemu-ifup, /etc/qemu-ifdown
+QEMUERS ALL=(ALL) NOPASSWD: QEMU
+  '';
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.bjorn = {

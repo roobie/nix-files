@@ -222,50 +222,64 @@ dhcp-option=3,192.168.1.1
   # services.xserver.layout = "us";
   # services.xserver.xkbOptions = "ctrl:nocaps";
   services.xserver = {
-        enable = true;
-        videoDrivers = [ "nouveau" "intel" ];
-        layout = "us";
-        xkbOptions = "ctrl:nocaps";
-        # synaptics = {
-        #     enable = true;
-        # };
-        # Enable touchpad support.
-        libinput = {
-            enable = true;
-        };
+    enable = true;
+    videoDrivers = [ "nouveau" "intel" ];
+    layout = "us";
+    xkbOptions = "ctrl:nocaps";
+    # synaptics = {
+    #     enable = true;
+    # };
+    # Enable touchpad support.
+    libinput = {
+      enable = true;
+    };
 
-        # Enable the KDE Desktop Environment.
-        # displayManager.sddm = {
-            # enable = true;
-            # autoLogin = {
-                # enable = true;
-                # user = "${mySecrets.user}";
-            # };
-        # };
-        displayManager.lightdm = {
-          enable = true;
-          # extraSeatDefaults = ''
-          # display-setup-script=/usr/share/setup-monitors.sh
-          # session-setup-script=/usr/share/setup-monitors.sh
-          # '';
-        };
-        # displayManager.gdm = {
-          # enable = true;
-          # wayland = true;
-        # };
-        # displayManager.session = [
-          # {
-            # manage = "window";
-            # name = "sway";
-            # start = ''
-            # ${pkgs.sway}/bin/sway
-            # '';
-          # }
-        # ];
-        # desktopManager.plasma5.enable = true;
-        windowManager.dwm.enable = true;
-        windowManager.i3.enable = true;
-        # windowManager.xmonad.enable = true;
+    # Enable the KDE Desktop Environment.
+    # displayManager.sddm = {
+      # enable = true;
+      # autoLogin = {
+        # enable = true;
+        # user = "${mySecrets.user}";
+      # };
+    # };
+    displayManager.lightdm = {
+      enable = true;
+      # extraSeatDefaults = ''
+      # display-setup-script=/usr/share/setup-monitors.sh
+      # session-setup-script=/usr/share/setup-monitors.sh
+      # '';
+    };
+    # displayManager.gdm = {
+      # enable = true;
+      # wayland = true;
+    # };
+    # displayManager.session = [
+      # {
+        # manage = "window";
+        # name = "sway";
+        # start = ''
+        # ${pkgs.sway}/bin/sway
+        # '';
+      # }
+    # ];
+    # desktopManager.plasma5.enable = true;
+    windowManager.dwm.enable = true;
+    windowManager.i3.enable = true;
+    # windowManager.xmonad.enable = true;
+
+    # xrandrHeads = [
+    #   {
+    #     output = "HDMI3";
+    #     primary = true;
+    #   }
+    #   {
+    #     output = "HDMI2";
+    #     primary = false;
+    #     monitorConfig = ''
+    #     Option "RightOf" "HDMI3"
+    #     '';
+    #   }
+    # ];
   };
 
   # Enable the KDE Desktop Environment.
